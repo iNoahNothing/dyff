@@ -132,6 +132,10 @@ types are: YAML (http://yaml.org/) and JSON (http://json.org/).
 			report = report.IgnoreValueChanges()
 		}
 
+		if reportOptions.ignoreNewDocuments {
+			report = report.IgnoreNewDocuments()
+		}
+
 		return writeReport(cmd, report)
 	},
 }

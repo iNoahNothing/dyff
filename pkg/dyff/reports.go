@@ -193,3 +193,23 @@ func (r Report) IgnoreValueChanges() (result Report) {
 
 	return result
 }
+
+func (r Report) IgnoreNewDocuments() (result Report) {
+	result = Report{
+		From: r.From,
+		To:   r.To,
+	}
+
+	for _, diff := range r.Diffs {
+		var isNewDoc = false
+		if len(diff.Details) == 1 && diff.Details[0].Kind == ADDITION && diff.Path.PathElements == nil {
+			isNewDoc = true
+		}
+
+		if !isNewDoc {
+			result.Diffs = append(result.Diffs, diff)
+		}
+	}
+
+	return result
+}

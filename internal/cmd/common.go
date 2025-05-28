@@ -48,6 +48,7 @@ type reportConfig struct {
 	omitHeader                bool
 	useGoPatchPaths           bool
 	ignoreValueChanges        bool
+	ignoreNewDocuments        bool
 	detectRenames             bool
 	minorChangeThreshold      float64
 	multilineContextLines     int
@@ -73,6 +74,7 @@ var defaults = reportConfig{
 	omitHeader:                false,
 	useGoPatchPaths:           false,
 	ignoreValueChanges:        false,
+	ignoreNewDocuments:        false,
 	detectRenames:             true,
 	minorChangeThreshold:      0.1,
 	multilineContextLines:     4,
@@ -104,6 +106,7 @@ func applyReportOptionsFlags(cmd *cobra.Command) {
 	cmd.Flags().StringSliceVar(&reportOptions.filterDocumentRegexps, "filter-document-regexp", defaults.filterDocumentRegexps, "filter report to a subset of documents based on supplied regular expressions")
 	cmd.Flags().StringSliceVar(&reportOptions.excludeDocumentRegexps, "exclude-document-regexp", defaults.excludeDocumentRegexps, "exclude documents from report based on supplied regular expressions")
 	cmd.Flags().BoolVarP(&reportOptions.ignoreValueChanges, "ignore-value-changes", "v", defaults.ignoreValueChanges, "exclude changes in values")
+	cmd.Flags().BoolVar(&reportOptions.ignoreNewDocuments, "ignore-new-documents", defaults.ignoreNewDocuments, "exclude new documents")
 	cmd.Flags().BoolVar(&reportOptions.detectRenames, "detect-renames", defaults.detectRenames, "enable detection for renames (document level for Kubernetes resources)")
 
 	// Main output preferences
