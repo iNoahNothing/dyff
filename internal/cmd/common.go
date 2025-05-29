@@ -51,6 +51,7 @@ type reportConfig struct {
 	IgnoreNewDocuments        bool     `yaml:"ignore-new-documents"`
 	DetectRenames             bool     `yaml:"detect-renames"`
 	MarshalJsonStrings        bool     `yaml:"marshal-json-strings"`
+	ChompBlockScalars         bool     `yaml:"chomp-block-scalars"`
 	MinorChangeThreshold      float64  `yaml:"minor-change-threshold"`
 	MultilineContextLines     int      `yaml:"multiline-context-lines"`
 	AdditionalIdentifiers     []string `yaml:"additional-identifier"`
@@ -78,6 +79,7 @@ var defaults = reportConfig{
 	IgnoreNewDocuments:        false,
 	DetectRenames:             true,
 	MarshalJsonStrings:        false,
+	ChompBlockScalars:         false,
 	MinorChangeThreshold:      0.1,
 	MultilineContextLines:     4,
 	AdditionalIdentifiers:     nil,
@@ -111,6 +113,7 @@ func applyReportOptionsFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&reportOptions.IgnoreNewDocuments, "ignore-new-documents", defaults.IgnoreNewDocuments, "exclude new documents")
 	cmd.Flags().BoolVar(&reportOptions.DetectRenames, "detect-renames", defaults.DetectRenames, "enable detection for renames (document level for Kubernetes resources)")
 	cmd.Flags().BoolVar(&reportOptions.MarshalJsonStrings, "marshal-json-strings", defaults.MarshalJsonStrings, "marshal Json strings for comparison, otherwise compare unformatted strings")
+	cmd.Flags().BoolVar(&reportOptions.ChompBlockScalars, "chomp-block-scalars", defaults.ChompBlockScalars, "chomp block scalars for comparison, otherwise compare unformatted strings")
 
 	// Main output preferences
 	cmd.Flags().StringVarP(&reportOptions.Style, "output", "o", defaults.Style, "specify the output style, supported styles: human, brief, github, gitlab, gitea")

@@ -45,6 +45,7 @@ type compareSettings struct {
 	KubernetesEntityDetection                bool
 	DetectRenames                            bool
 	MarshalJsonStrings                       bool
+	ChompBlockScalars                        bool
 	AdditionalIdentifiers                    []string
 }
 
@@ -101,6 +102,12 @@ func DetectRenames(value bool) CompareOption {
 func MarshalJsonStrings(value bool) CompareOption {
 	return func(settings *compareSettings) {
 		settings.MarshalJsonStrings = value
+	}
+}
+
+func ChompBlockScalars(value bool) CompareOption {
+	return func(settings *compareSettings) {
+		settings.ChompBlockScalars = value
 	}
 }
 
@@ -1068,7 +1075,7 @@ func (compare *compare) basicType(node *yamlv3.Node) interface{} {
 		return result
 
 	case yamlv3.ScalarNode:
-		return node.Value
+		return compare.formatScalar(node)
 
 	case yamlv3.AliasNode:
 		return compare.basicType(node.Alias)
@@ -1086,7 +1093,7 @@ func (compare *compare) calcNodeHash(node *yamlv3.Node) (hash uint64) {
 		hash, err = hashstructure.Hash(compare.basicType(node), nil)
 
 	case yamlv3.ScalarNode:
-		hash, err = hashstructure.Hash(node.Value, nil)
+		hash, err = hashstructure.Hash(compare.formatScalar(node), nil)
 
 	case yamlv3.AliasNode:
 		hash = compare.calcNodeHash(followAlias(node))
@@ -1100,6 +1107,16 @@ func (compare *compare) calcNodeHash(node *yamlv3.Node) (hash uint64) {
 	}
 
 	return hash
+}
+
+func (compare *compare) formatScalar(node *yamlv3.Node) string {
+	value := node.Value
+	if node.Style == yamlv3.LiteralStyle || node.Style == yamlv3.FoldedStyle {
+		if compare.settings.ChompBlockScalars {
+			value = strings.TrimSuffix(value, "\n")
+		}
+	}
+	return value
 }
 
 func sortNode(node *yamlv3.Node) {
