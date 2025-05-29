@@ -38,95 +38,113 @@ import (
 )
 
 type reportConfig struct {
-	style                     string
-	ignoreOrderChanges        bool
-	ignoreWhitespaceChanges   bool
-	kubernetesEntityDetection bool
-	noTableStyle              bool
-	doNotInspectCerts         bool
-	exitWithCode              bool
-	omitHeader                bool
-	useGoPatchPaths           bool
-	ignoreValueChanges        bool
-	ignoreNewDocuments        bool
-	detectRenames             bool
-	marshalJsonStrings        bool
-	minorChangeThreshold      float64
-	multilineContextLines     int
-	additionalIdentifiers     []string
-	filters                   []string
-	excludes                  []string
-	filterRegexps             []string
-	excludeRegexps            []string
-	filterDocuments           []string
-	excludeDocuments          []string
-	filterDocumentRegexps     []string
-	excludeDocumentRegexps    []string
+	Style                     string   `yaml:"style"`
+	IgnoreOrderChanges        bool     `yaml:"ignore-order-changes"`
+	IgnoreWhitespaceChanges   bool     `yaml:"ignore-whitespace-changes"`
+	KubernetesEntityDetection bool     `yaml:"kubernetes-entity-detection"`
+	NoTableStyle              bool     `yaml:"no-table-style"`
+	DoNotInspectCerts         bool     `yaml:"do-not-inspect-certs"`
+	ExitWithCode              bool     `yaml:"exit-with-code"`
+	OmitHeader                bool     `yaml:"omit-header"`
+	UseGoPatchPaths           bool     `yaml:"use-go-patch-paths"`
+	IgnoreValueChanges        bool     `yaml:"ignore-value-changes"`
+	IgnoreNewDocuments        bool     `yaml:"ignore-new-documents"`
+	DetectRenames             bool     `yaml:"detect-renames"`
+	MarshalJsonStrings        bool     `yaml:"marshal-json-strings"`
+	MinorChangeThreshold      float64  `yaml:"minor-change-threshold"`
+	MultilineContextLines     int      `yaml:"multiline-context-lines"`
+	AdditionalIdentifiers     []string `yaml:"additional-identifier"`
+	Filters                   []string `yaml:"filter"`
+	Excludes                  []string `yaml:"exclude"`
+	FilterRegexps             []string `yaml:"filter-regexp"`
+	ExcludeRegexps            []string `yaml:"exclude-regexp"`
+	FilterDocuments           []string `yaml:"filter-document"`
+	ExcludeDocuments          []string `yaml:"exclude-document"`
+	FilterDocumentRegexps     []string `yaml:"filter-document-regexp"`
+	ExcludeDocumentRegexps    []string `yaml:"exclude-document-regexp"`
 }
 
 var defaults = reportConfig{
-	style:                     "human",
-	ignoreOrderChanges:        false,
-	ignoreWhitespaceChanges:   false,
-	kubernetesEntityDetection: true,
-	noTableStyle:              false,
-	doNotInspectCerts:         false,
-	exitWithCode:              false,
-	omitHeader:                false,
-	useGoPatchPaths:           false,
-	ignoreValueChanges:        false,
-	ignoreNewDocuments:        false,
-	detectRenames:             true,
-	marshalJsonStrings:        false,
-	minorChangeThreshold:      0.1,
-	multilineContextLines:     4,
-	additionalIdentifiers:     nil,
-	filters:                   nil,
-	excludes:                  nil,
-	filterRegexps:             nil,
-	excludeRegexps:            nil,
-	filterDocuments:           nil,
-	excludeDocuments:          nil,
-	filterDocumentRegexps:     nil,
-	excludeDocumentRegexps:    nil,
+	Style:                     "human",
+	IgnoreOrderChanges:        false,
+	IgnoreWhitespaceChanges:   false,
+	KubernetesEntityDetection: true,
+	NoTableStyle:              false,
+	DoNotInspectCerts:         false,
+	ExitWithCode:              false,
+	OmitHeader:                false,
+	UseGoPatchPaths:           false,
+	IgnoreValueChanges:        false,
+	IgnoreNewDocuments:        false,
+	DetectRenames:             true,
+	MarshalJsonStrings:        false,
+	MinorChangeThreshold:      0.1,
+	MultilineContextLines:     4,
+	AdditionalIdentifiers:     nil,
+	Filters:                   nil,
+	Excludes:                  nil,
+	FilterRegexps:             nil,
+	ExcludeRegexps:            nil,
+	FilterDocuments:           nil,
+	ExcludeDocuments:          nil,
+	FilterDocumentRegexps:     nil,
+	ExcludeDocumentRegexps:    nil,
 }
 
 var reportOptions reportConfig
 
 func applyReportOptionsFlags(cmd *cobra.Command) {
 	// Compare options
-	cmd.Flags().BoolVarP(&reportOptions.ignoreOrderChanges, "ignore-order-changes", "i", defaults.ignoreOrderChanges, "ignore order changes in lists")
-	cmd.Flags().BoolVar(&reportOptions.ignoreWhitespaceChanges, "ignore-whitespace-changes", defaults.ignoreWhitespaceChanges, "ignore leading or trailing whitespace changes")
-	cmd.Flags().BoolVarP(&reportOptions.kubernetesEntityDetection, "detect-kubernetes", "", defaults.kubernetesEntityDetection, "detect kubernetes entities")
-	cmd.Flags().StringArrayVar(&reportOptions.additionalIdentifiers, "additional-identifier", defaults.additionalIdentifiers, "use additional identifier candidates in named entry lists")
-	cmd.Flags().StringSliceVar(&reportOptions.filters, "filter", defaults.filters, "filter reports to a subset of differences based on supplied arguments")
-	cmd.Flags().StringSliceVar(&reportOptions.excludes, "exclude", defaults.excludes, "exclude reports from a set of differences based on supplied arguments")
-	cmd.Flags().StringSliceVar(&reportOptions.filterRegexps, "filter-regexp", defaults.filterRegexps, "filter reports to a subset of differences based on supplied regular expressions")
-	cmd.Flags().StringSliceVar(&reportOptions.excludeRegexps, "exclude-regexp", defaults.excludeRegexps, "exclude reports from a set of differences based on supplied regular expressions")
-	cmd.Flags().StringSliceVar(&reportOptions.filterDocuments, "filter-document", defaults.filterDocuments, "filter report to a subset of documents")
-	cmd.Flags().StringSliceVar(&reportOptions.excludeDocuments, "exclude-document", defaults.excludeDocuments, "exclude documents from report")
-	cmd.Flags().StringSliceVar(&reportOptions.filterDocumentRegexps, "filter-document-regexp", defaults.filterDocumentRegexps, "filter report to a subset of documents based on supplied regular expressions")
-	cmd.Flags().StringSliceVar(&reportOptions.excludeDocumentRegexps, "exclude-document-regexp", defaults.excludeDocumentRegexps, "exclude documents from report based on supplied regular expressions")
-	cmd.Flags().BoolVarP(&reportOptions.ignoreValueChanges, "ignore-value-changes", "v", defaults.ignoreValueChanges, "exclude changes in values")
-	cmd.Flags().BoolVar(&reportOptions.ignoreNewDocuments, "ignore-new-documents", defaults.ignoreNewDocuments, "exclude new documents")
-	cmd.Flags().BoolVar(&reportOptions.detectRenames, "detect-renames", defaults.detectRenames, "enable detection for renames (document level for Kubernetes resources)")
-	cmd.Flags().BoolVar(&reportOptions.marshalJsonStrings, "marshal-json-strings", defaults.marshalJsonStrings, "marshal Json strings for comparison, otherwise compare unformatted strings")
+	cmd.Flags().BoolVarP(&reportOptions.IgnoreOrderChanges, "ignore-order-changes", "i", defaults.IgnoreOrderChanges, "ignore order changes in lists")
+	cmd.Flags().BoolVar(&reportOptions.IgnoreWhitespaceChanges, "ignore-whitespace-changes", defaults.IgnoreWhitespaceChanges, "ignore leading or trailing whitespace changes")
+	cmd.Flags().BoolVarP(&reportOptions.KubernetesEntityDetection, "detect-kubernetes", "", defaults.KubernetesEntityDetection, "detect kubernetes entities")
+	cmd.Flags().StringArrayVar(&reportOptions.AdditionalIdentifiers, "additional-identifier", defaults.AdditionalIdentifiers, "use additional identifier candidates in named entry lists")
+	cmd.Flags().StringSliceVar(&reportOptions.Filters, "filter", defaults.Filters, "filter reports to a subset of differences based on supplied arguments")
+	cmd.Flags().StringSliceVar(&reportOptions.Excludes, "exclude", defaults.Excludes, "exclude reports from a set of differences based on supplied arguments")
+	cmd.Flags().StringSliceVar(&reportOptions.FilterRegexps, "filter-regexp", defaults.FilterRegexps, "filter reports to a subset of differences based on supplied regular expressions")
+	cmd.Flags().StringSliceVar(&reportOptions.ExcludeRegexps, "exclude-regexp", defaults.ExcludeRegexps, "exclude reports from a set of differences based on supplied regular expressions")
+	cmd.Flags().StringSliceVar(&reportOptions.FilterDocuments, "filter-document", defaults.FilterDocuments, "filter report to a subset of documents")
+	cmd.Flags().StringSliceVar(&reportOptions.ExcludeDocuments, "exclude-document", defaults.ExcludeDocuments, "exclude documents from report")
+	cmd.Flags().StringSliceVar(&reportOptions.FilterDocumentRegexps, "filter-document-regexp", defaults.FilterDocumentRegexps, "filter report to a subset of documents based on supplied regular expressions")
+	cmd.Flags().StringSliceVar(&reportOptions.ExcludeDocumentRegexps, "exclude-document-regexp", defaults.ExcludeDocumentRegexps, "exclude documents from report based on supplied regular expressions")
+	cmd.Flags().BoolVarP(&reportOptions.IgnoreValueChanges, "ignore-value-changes", "v", defaults.IgnoreValueChanges, "exclude changes in values")
+	cmd.Flags().BoolVar(&reportOptions.IgnoreNewDocuments, "ignore-new-documents", defaults.IgnoreNewDocuments, "exclude new documents")
+	cmd.Flags().BoolVar(&reportOptions.DetectRenames, "detect-renames", defaults.DetectRenames, "enable detection for renames (document level for Kubernetes resources)")
+	cmd.Flags().BoolVar(&reportOptions.MarshalJsonStrings, "marshal-json-strings", defaults.MarshalJsonStrings, "marshal Json strings for comparison, otherwise compare unformatted strings")
 
 	// Main output preferences
-	cmd.Flags().StringVarP(&reportOptions.style, "output", "o", defaults.style, "specify the output style, supported styles: human, brief, github, gitlab, gitea")
-	cmd.Flags().BoolVarP(&reportOptions.omitHeader, "omit-header", "b", defaults.omitHeader, "omit the dyff summary header")
-	cmd.Flags().BoolVarP(&reportOptions.exitWithCode, "set-exit-code", "s", defaults.exitWithCode, "set program exit code, with 0 meaning no difference, 1 for differences detected, and 255 for program error")
+	cmd.Flags().StringVarP(&reportOptions.Style, "output", "o", defaults.Style, "specify the output style, supported styles: human, brief, github, gitlab, gitea")
+	cmd.Flags().BoolVarP(&reportOptions.OmitHeader, "omit-header", "b", defaults.OmitHeader, "omit the dyff summary header")
+	cmd.Flags().BoolVarP(&reportOptions.ExitWithCode, "set-exit-code", "s", defaults.ExitWithCode, "set program exit code, with 0 meaning no difference, 1 for differences detected, and 255 for program error")
 
 	// Human/BOSH output related flags
-	cmd.Flags().BoolVarP(&reportOptions.noTableStyle, "no-table-style", "l", defaults.noTableStyle, "do not place blocks next to each other, always use one row per text block")
-	cmd.Flags().BoolVarP(&reportOptions.doNotInspectCerts, "no-cert-inspection", "x", defaults.doNotInspectCerts, "disable x509 certificate inspection, compare as raw text")
-	cmd.Flags().BoolVarP(&reportOptions.useGoPatchPaths, "use-go-patch-style", "g", defaults.useGoPatchPaths, "use Go-Patch style paths in outputs")
-	cmd.Flags().Float64VarP(&reportOptions.minorChangeThreshold, "minor-change-threshold", "", defaults.minorChangeThreshold, "minor change threshold")
-	cmd.Flags().IntVarP(&reportOptions.multilineContextLines, "multi-line-context-lines", "", defaults.multilineContextLines, "multi-line context lines")
+	cmd.Flags().BoolVarP(&reportOptions.NoTableStyle, "no-table-style", "l", defaults.NoTableStyle, "do not place blocks next to each other, always use one row per text block")
+	cmd.Flags().BoolVarP(&reportOptions.DoNotInspectCerts, "no-cert-inspection", "x", defaults.DoNotInspectCerts, "disable x509 certificate inspection, compare as raw text")
+	cmd.Flags().BoolVarP(&reportOptions.UseGoPatchPaths, "use-go-patch-style", "g", defaults.UseGoPatchPaths, "use Go-Patch style paths in outputs")
+	cmd.Flags().Float64VarP(&reportOptions.MinorChangeThreshold, "minor-change-threshold", "", defaults.MinorChangeThreshold, "minor change threshold")
+	cmd.Flags().IntVarP(&reportOptions.MultilineContextLines, "multi-line-context-lines", "", defaults.MultilineContextLines, "multi-line context lines")
 
 	// Deprecated
-	cmd.Flags().BoolVar(&reportOptions.exitWithCode, "set-exit-status", defaults.exitWithCode, "set program exit code, with 0 meaning no difference, 1 for differences detected, and 255 for program error")
+	cmd.Flags().BoolVar(&reportOptions.ExitWithCode, "set-exit-status", defaults.ExitWithCode, "set program exit code, with 0 meaning no difference, 1 for differences detected, and 255 for program error")
 	_ = cmd.Flags().MarkDeprecated("set-exit-status", "use --set-exit-code instead")
+
+	// Set reportOptions from a config file
+	var configFile string
+	cmd.Flags().StringVar(&configFile, "config", ".dyffconfig.yml", "set dyff options from a yaml config file.")
+	if _, err := os.Stat(configFile); err == nil {
+		file, err := os.Open(configFile)
+		if err != nil {
+			bunt.Errorf("failed to open config file %s: %v", configFile, err)
+			os.Exit(1)
+		}
+		defer file.Close()
+
+		decoder := yamlv3.NewDecoder(file)
+		if err := decoder.Decode(&reportOptions); err != nil {
+			bunt.Errorf("failed to decode config file %s: %v", configFile, err)
+			os.Exit(1)
+		}
+	}
 }
 
 // OutputWriter encapsulates the required fields to define the look and feel of
@@ -230,17 +248,17 @@ func (w *OutputWriter) write(writer io.Writer, filename string) error {
 
 func writeReport(cmd *cobra.Command, report dyff.Report) error {
 	var reportWriter dyff.ReportWriter
-	switch strings.ToLower(reportOptions.style) {
+	switch strings.ToLower(reportOptions.Style) {
 	case "human", "bosh":
 		reportWriter = &dyff.HumanReport{
 			Report:                report,
 			Indent:                2,
-			DoNotInspectCerts:     reportOptions.doNotInspectCerts,
-			NoTableStyle:          reportOptions.noTableStyle,
-			OmitHeader:            reportOptions.omitHeader,
-			UseGoPatchPaths:       reportOptions.useGoPatchPaths,
-			MinorChangeThreshold:  reportOptions.minorChangeThreshold,
-			MultilineContextLines: reportOptions.multilineContextLines,
+			DoNotInspectCerts:     reportOptions.DoNotInspectCerts,
+			NoTableStyle:          reportOptions.NoTableStyle,
+			OmitHeader:            reportOptions.OmitHeader,
+			UseGoPatchPaths:       reportOptions.UseGoPatchPaths,
+			MinorChangeThreshold:  reportOptions.MinorChangeThreshold,
+			MultilineContextLines: reportOptions.MultilineContextLines,
 			PrefixMultiline:       false,
 		}
 
@@ -252,12 +270,12 @@ func writeReport(cmd *cobra.Command, report dyff.Report) error {
 			HumanReport: dyff.HumanReport{
 				Report:                report,
 				Indent:                0,
-				DoNotInspectCerts:     reportOptions.doNotInspectCerts,
+				DoNotInspectCerts:     reportOptions.DoNotInspectCerts,
 				NoTableStyle:          true,
 				OmitHeader:            true,
-				UseGoPatchPaths:       reportOptions.useGoPatchPaths,
-				MinorChangeThreshold:  reportOptions.minorChangeThreshold,
-				MultilineContextLines: reportOptions.multilineContextLines,
+				UseGoPatchPaths:       reportOptions.UseGoPatchPaths,
+				MinorChangeThreshold:  reportOptions.MinorChangeThreshold,
+				MultilineContextLines: reportOptions.MultilineContextLines,
 				PrefixMultiline:       true,
 			},
 		}
@@ -270,12 +288,12 @@ func writeReport(cmd *cobra.Command, report dyff.Report) error {
 			HumanReport: dyff.HumanReport{
 				Report:                report,
 				Indent:                0,
-				DoNotInspectCerts:     reportOptions.doNotInspectCerts,
+				DoNotInspectCerts:     reportOptions.DoNotInspectCerts,
 				NoTableStyle:          true,
 				OmitHeader:            true,
-				UseGoPatchPaths:       reportOptions.useGoPatchPaths,
-				MinorChangeThreshold:  reportOptions.minorChangeThreshold,
-				MultilineContextLines: reportOptions.multilineContextLines,
+				UseGoPatchPaths:       reportOptions.UseGoPatchPaths,
+				MinorChangeThreshold:  reportOptions.MinorChangeThreshold,
+				MultilineContextLines: reportOptions.MultilineContextLines,
 				PrefixMultiline:       true,
 			},
 		}
@@ -288,12 +306,12 @@ func writeReport(cmd *cobra.Command, report dyff.Report) error {
 			HumanReport: dyff.HumanReport{
 				Report:                report,
 				Indent:                0,
-				DoNotInspectCerts:     reportOptions.doNotInspectCerts,
+				DoNotInspectCerts:     reportOptions.DoNotInspectCerts,
 				NoTableStyle:          true,
 				OmitHeader:            true,
-				UseGoPatchPaths:       reportOptions.useGoPatchPaths,
-				MinorChangeThreshold:  reportOptions.minorChangeThreshold,
-				MultilineContextLines: reportOptions.multilineContextLines,
+				UseGoPatchPaths:       reportOptions.UseGoPatchPaths,
+				MinorChangeThreshold:  reportOptions.MinorChangeThreshold,
+				MultilineContextLines: reportOptions.MultilineContextLines,
 				PrefixMultiline:       true,
 			},
 		}
@@ -304,7 +322,7 @@ func writeReport(cmd *cobra.Command, report dyff.Report) error {
 		}
 
 	default:
-		return fmt.Errorf("unknown output style %s: %w", reportOptions.style, fmt.Errorf(cmd.UsageString()))
+		return fmt.Errorf("unknown output style %s: %w", reportOptions.Style, fmt.Errorf(cmd.UsageString()))
 	}
 
 	if err := reportWriter.WriteReport(os.Stdout); err != nil {
@@ -312,7 +330,7 @@ func writeReport(cmd *cobra.Command, report dyff.Report) error {
 	}
 
 	// If configured, make sure `dyff` exists with an exit status
-	if reportOptions.exitWithCode {
+	if reportOptions.ExitWithCode {
 		switch len(report.Diffs) {
 		case 0:
 			return errorWithExitCode{value: 0}

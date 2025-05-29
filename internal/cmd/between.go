@@ -72,68 +72,68 @@ types are: YAML (http://yaml.org/) and JSON (http://json.org/).
 
 		// Change root of 'from' input file if change root flag for 'from' is set
 		if betweenCmdSettings.chrootFrom != "" {
-			if err = dyff.ChangeRoot(&from, betweenCmdSettings.chrootFrom, reportOptions.useGoPatchPaths, betweenCmdSettings.translateListToDocuments); err != nil {
+			if err = dyff.ChangeRoot(&from, betweenCmdSettings.chrootFrom, reportOptions.UseGoPatchPaths, betweenCmdSettings.translateListToDocuments); err != nil {
 				return fmt.Errorf("failed to change root of %s to path %s: %w", from.Location, betweenCmdSettings.chrootFrom, err)
 			}
 		}
 
 		// Change root of 'to' input file if change root flag for 'to' is set
 		if betweenCmdSettings.chrootTo != "" {
-			if err = dyff.ChangeRoot(&to, betweenCmdSettings.chrootTo, reportOptions.useGoPatchPaths, betweenCmdSettings.translateListToDocuments); err != nil {
+			if err = dyff.ChangeRoot(&to, betweenCmdSettings.chrootTo, reportOptions.UseGoPatchPaths, betweenCmdSettings.translateListToDocuments); err != nil {
 				return fmt.Errorf("failed to change root of %s to path %s: %w", to.Location, betweenCmdSettings.chrootTo, err)
 			}
 		}
 
 		report, err := dyff.CompareInputFiles(from, to,
-			dyff.IgnoreOrderChanges(reportOptions.ignoreOrderChanges),
-			dyff.IgnoreWhitespaceChanges(reportOptions.ignoreWhitespaceChanges),
-			dyff.KubernetesEntityDetection(reportOptions.kubernetesEntityDetection),
-			dyff.AdditionalIdentifiers(reportOptions.additionalIdentifiers...),
-			dyff.DetectRenames(reportOptions.detectRenames),
-			dyff.MarshalJsonStrings(reportOptions.marshalJsonStrings),
+			dyff.IgnoreOrderChanges(reportOptions.IgnoreOrderChanges),
+			dyff.IgnoreWhitespaceChanges(reportOptions.IgnoreWhitespaceChanges),
+			dyff.KubernetesEntityDetection(reportOptions.KubernetesEntityDetection),
+			dyff.AdditionalIdentifiers(reportOptions.AdditionalIdentifiers...),
+			dyff.DetectRenames(reportOptions.DetectRenames),
+			dyff.MarshalJsonStrings(reportOptions.MarshalJsonStrings),
 		)
 
 		if err != nil {
 			return fmt.Errorf("failed to compare input files: %w", err)
 		}
 
-		if reportOptions.filters != nil {
-			report = report.Filter(reportOptions.filters...)
+		if reportOptions.Filters != nil {
+			report = report.Filter(reportOptions.Filters...)
 		}
 
-		if reportOptions.filterRegexps != nil {
-			report = report.FilterRegexp(reportOptions.filterRegexps...)
+		if reportOptions.FilterRegexps != nil {
+			report = report.FilterRegexp(reportOptions.FilterRegexps...)
 		}
 
-		if reportOptions.excludes != nil {
-			report = report.Exclude(reportOptions.excludes...)
+		if reportOptions.Excludes != nil {
+			report = report.Exclude(reportOptions.Excludes...)
 		}
 
-		if reportOptions.excludeRegexps != nil {
-			report = report.ExcludeRegexp(reportOptions.excludeRegexps...)
+		if reportOptions.ExcludeRegexps != nil {
+			report = report.ExcludeRegexp(reportOptions.ExcludeRegexps...)
 		}
 
-		if reportOptions.filterDocuments != nil {
-			report = report.FilterDocument(reportOptions.filterDocuments...)
+		if reportOptions.FilterDocuments != nil {
+			report = report.FilterDocument(reportOptions.FilterDocuments...)
 		}
 
-		if reportOptions.filterDocumentRegexps != nil {
-			report = report.FilterDocumentRegexp(reportOptions.filterDocumentRegexps...)
+		if reportOptions.FilterDocumentRegexps != nil {
+			report = report.FilterDocumentRegexp(reportOptions.FilterDocumentRegexps...)
 		}
 
-		if reportOptions.excludeDocuments != nil {
-			report = report.ExcludeDocument(reportOptions.excludeDocuments...)
+		if reportOptions.ExcludeDocuments != nil {
+			report = report.ExcludeDocument(reportOptions.ExcludeDocuments...)
 		}
 
-		if reportOptions.excludeDocumentRegexps != nil {
-			report = report.ExcludeDocumentRegexp(reportOptions.excludeDocumentRegexps...)
+		if reportOptions.ExcludeDocumentRegexps != nil {
+			report = report.ExcludeDocumentRegexp(reportOptions.ExcludeDocumentRegexps...)
 		}
 
-		if reportOptions.ignoreValueChanges {
+		if reportOptions.IgnoreValueChanges {
 			report = report.IgnoreValueChanges()
 		}
 
-		if reportOptions.ignoreNewDocuments {
+		if reportOptions.IgnoreNewDocuments {
 			report = report.IgnoreNewDocuments()
 		}
 
