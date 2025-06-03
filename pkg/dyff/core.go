@@ -183,7 +183,6 @@ func CompareInputFiles(from ytbx.InputFile, to ytbx.InputFile, compareOptions ..
 			},
 			from.Documents[idx],
 			to.Documents[idx],
-			nil,
 		)
 
 		if err != nil {
@@ -196,7 +195,7 @@ func CompareInputFiles(from ytbx.InputFile, to ytbx.InputFile, compareOptions ..
 	return Report{from, to, result}, nil
 }
 
-func (compare *compare) objects(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) objects(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	switch {
 	case from == nil && to == nil:
 		return []Diff{}, nil
@@ -209,7 +208,6 @@ func (compare *compare) objects(path ytbx.Path, from *yamlv3.Node, to *yamlv3.No
 				From: from,
 				To:   to,
 			}},
-			k8sId,
 		}}, nil
 
 	case (from.Kind != to.Kind) || (from.Tag != to.Tag):
@@ -220,37 +218,36 @@ func (compare *compare) objects(path ytbx.Path, from *yamlv3.Node, to *yamlv3.No
 				From: from,
 				To:   to,
 			}},
-			k8sId,
 		}}, nil
 	}
 
-	return compare.nonNilSameKindNodes(path, from, to, k8sId)
+	return compare.nonNilSameKindNodes(path, from, to)
 }
 
-func (compare *compare) nonNilSameKindNodes(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) nonNilSameKindNodes(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	var diffs []Diff
 	var err error
 
 	switch from.Kind {
 	case yamlv3.DocumentNode:
-		diffs, err = compare.objects(path, from.Content[0], to.Content[0], k8sId)
+		diffs, err = compare.objects(path, from.Content[0], to.Content[0])
 
 	case yamlv3.MappingNode:
-		diffs, err = compare.mappingNodes(path, from, to, k8sId)
+		diffs, err = compare.mappingNodes(path, from, to)
 
 	case yamlv3.SequenceNode:
-		diffs, err = compare.sequenceNodes(path, from, to, k8sId)
+		diffs, err = compare.sequenceNodes(path, from, to)
 
 	case yamlv3.ScalarNode:
 		switch from.Tag {
 		case "!!str":
-			diffs, err = compare.nodeValues(path, from, to, k8sId)
+			diffs, err = compare.nodeValues(path, from, to)
 
 		case "!!null":
 			// Ignore different ways to define a null value
 
 		case "!!bool":
-			diffs, err = compare.boolValues(path, from, to, k8sId)
+			diffs, err = compare.boolValues(path, from, to)
 
 		default:
 			if from.Value != to.Value {
@@ -261,13 +258,12 @@ func (compare *compare) nonNilSameKindNodes(path ytbx.Path, from *yamlv3.Node, t
 						From: from,
 						To:   to,
 					}},
-					k8sId,
 				}}, nil
 			}
 		}
 
 	case yamlv3.AliasNode:
-		diffs, err = compare.objects(path, from.Alias, to.Alias, k8sId)
+		diffs, err = compare.objects(path, from.Alias, to.Alias)
 
 	default:
 		err = fmt.Errorf("failed to compare objects due to unsupported kind %v", from.Kind)
@@ -280,9 +276,8 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 	var result []Diff
 
 	type doc struct {
-		node  *yamlv3.Node
-		idx   int
-		k8sId *K8sIdentifier
+		node *yamlv3.Node
+		idx  int
 	}
 
 	var createDocumentLookUpMap = func(inputFile ytbx.InputFile) (map[string]doc, []string, error) {
@@ -297,13 +292,8 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 				return nil, nil, err
 			}
 
-			k8sId, err := k8sItem.Identifier(node)
-			if err != nil {
-				return nil, nil, err
-			}
-
 			names = append(names, name)
-			lookUpMap[name] = doc{idx: i, node: node, k8sId: k8sId}
+			lookUpMap[name] = doc{idx: i, node: node}
 		}
 
 		return lookUpMap, names, nil
@@ -330,7 +320,6 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 				ytbx.Path{Root: &from, DocumentIdx: fromItem.idx},
 				followAlias(fromItem.node),
 				followAlias(toItem.node),
-				fromItem.k8sId,
 			)
 			if err != nil {
 				return nil, err
@@ -355,16 +344,6 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 	candidateName := func(mappingNode *yamlv3.Node) string {
 		name, _ := k8sItem.Name(mappingNode)
 		return name
-	}
-
-	candidateK8sId := func(name string) *K8sIdentifier {
-		if id, ok := toLookUpMap[name]; ok {
-			return id.k8sId
-		}
-		if id, ok := fromLookUpMap[name]; ok {
-			return id.k8sId
-		}
-		return nil
 	}
 
 	changes := idem.NewDocumentChanges(
@@ -396,7 +375,6 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 			*modified.To.Path,
 			followAlias(modified.From.Doc),
 			followAlias(modified.To.Doc),
-			nil,
 		)
 		if err != nil {
 			return nil, err
@@ -419,7 +397,6 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 				},
 				To: nil,
 			}},
-			K8sIdentifier: candidateK8sId(removal.Name()),
 		})
 	}
 
@@ -434,7 +411,6 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 					Content: []*yamlv3.Node{addition.Doc},
 				},
 			}},
-			K8sIdentifier: candidateK8sId(addition.Name()),
 		})
 	}
 
@@ -456,7 +432,7 @@ func (compare *compare) documentNodes(from, to ytbx.InputFile) ([]Diff, error) {
 	return result, nil
 }
 
-func (compare *compare) mappingNodes(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) mappingNodes(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	result := make([]Diff, 0)
 	removals := []*yamlv3.Node{}
 	additions := []*yamlv3.Node{}
@@ -469,7 +445,6 @@ func (compare *compare) mappingNodes(path ytbx.Path, from *yamlv3.Node, to *yaml
 				ytbx.NewPathWithNamedElement(path, key.Value),
 				followAlias(fromItem),
 				followAlias(toItem),
-				k8sId,
 			)
 
 			if err != nil {
@@ -529,7 +504,7 @@ func (compare *compare) mappingNodes(path ytbx.Path, from *yamlv3.Node, to *yaml
 	return result, nil
 }
 
-func (compare *compare) sequenceNodes(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) sequenceNodes(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	// Bail out quickly if there is nothing to check
 	if len(from.Content) == 0 && len(to.Content) == 0 {
 		return []Diff{}, nil
@@ -537,24 +512,24 @@ func (compare *compare) sequenceNodes(path ytbx.Path, from *yamlv3.Node, to *yam
 
 	// check if a known identifier (e.g. name, or id) can be used
 	if identifier, err := compare.getIdentifierFromNamedLists(from, to); err == nil {
-		return compare.namedEntryLists(path, identifier, from, to, k8sId)
+		return compare.namedEntryLists(path, identifier, from, to)
 	}
 
 	// check if there is a field in all entries that could serve as an identifier
 	if identifier := compare.getNonStandardIdentifierFromNamedLists(from, to); identifier != nil {
-		return compare.namedEntryLists(path, identifier, from, to, k8sId)
+		return compare.namedEntryLists(path, identifier, from, to)
 	}
 
 	// check if Kubernetes resource fields can be used to identify items
 	if identifier, err := compare.getIdentifierFromKubernetesEntityList(from, to); err == nil {
-		return compare.namedEntryLists(path, identifier, from, to, k8sId)
+		return compare.namedEntryLists(path, identifier, from, to)
 	}
 
 	// in any other case, compare lists as simple lists by relying on hashes
-	return compare.simpleLists(path, from, to, k8sId)
+	return compare.simpleLists(path, from, to)
 }
 
-func (compare *compare) simpleLists(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) simpleLists(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	removals := make([]*yamlv3.Node, 0)
 	additions := make([]*yamlv3.Node, 0)
 
@@ -568,7 +543,6 @@ func (compare *compare) simpleLists(path ytbx.Path, from *yamlv3.Node, to *yamlv
 			ytbx.NewPathWithIndexedListElement(path, 0),
 			followAlias(from.Content[0]),
 			followAlias(to.Content[0]),
-			k8sId,
 		)
 	}
 
@@ -633,7 +607,7 @@ func (compare *compare) simpleLists(path ytbx.Path, from *yamlv3.Node, to *yamlv
 	return packChangesAndAddToResult([]Diff{}, path, orderChanges, additions, removals)
 }
 
-func (compare *compare) namedEntryLists(path ytbx.Path, identifier listItemIdentifier, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) namedEntryLists(path ytbx.Path, identifier listItemIdentifier, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	removals := make([]*yamlv3.Node, 0)
 	additions := make([]*yamlv3.Node, 0)
 
@@ -658,7 +632,6 @@ func (compare *compare) namedEntryLists(path ytbx.Path, identifier listItemIdent
 				ytbx.NewPathWithNamedListElement(path, identifier, name),
 				followAlias(fromEntry),
 				followAlias(toEntry),
-				k8sId,
 			)
 			if err != nil {
 				return nil, err
@@ -697,7 +670,7 @@ func (compare *compare) namedEntryLists(path ytbx.Path, identifier listItemIdent
 	return packChangesAndAddToResult(result, path, orderChanges, additions, removals)
 }
 
-func (compare *compare) nodeValues(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) nodeValues(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	fromValue := from.Value
 	toValue := to.Value
 	// Marshaling strings to Json removes formatting differences as the cause.
@@ -730,14 +703,13 @@ func (compare *compare) nodeValues(path ytbx.Path, from *yamlv3.Node, to *yamlv3
 				From: from,
 				To:   to,
 			}},
-			k8sId,
 		}}, nil
 	}
 
 	return nil, nil
 }
 
-func (compare *compare) boolValues(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node, k8sId *K8sIdentifier) ([]Diff, error) {
+func (compare *compare) boolValues(path ytbx.Path, from *yamlv3.Node, to *yamlv3.Node) ([]Diff, error) {
 	boolFrom, err := toBool(from.Value)
 	if err != nil {
 		return nil, err
@@ -755,7 +727,6 @@ func (compare *compare) boolValues(path ytbx.Path, from *yamlv3.Node, to *yamlv3
 				From: from,
 				To:   to,
 			}},
-			k8sId,
 		})
 	}
 

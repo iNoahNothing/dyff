@@ -53,9 +53,8 @@ type K8sIdentifier struct {
 
 // Diff encapsulates everything noteworthy about a difference
 type Diff struct {
-	Path          *ytbx.Path
-	Details       []Detail
-	K8sIdentifier *K8sIdentifier
+	Path    *ytbx.Path
+	Details []Detail
 }
 
 // Report encapsulates the actual end-result of the comparison: The input data
