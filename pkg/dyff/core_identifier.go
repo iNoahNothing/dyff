@@ -22,6 +22,8 @@ package dyff
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"regexp"
 	"strings"
 
 	yamlv3 "gopkg.in/yaml.v3"
@@ -102,36 +104,6 @@ func (i *k8sItemIdentifier) FindNodeByName(sequenceNode *yamlv3.Node, name strin
 	return nil, fmt.Errorf("failed to find mapping entry with name %q", name)
 }
 
-func getK8sItemIdentifier(node *yamlv3.Node) (map[string]string, error) {
-	var id map[string]string
-
-	apiVersion, err := grab(node, "apiVersion")
-	if err != nil {
-		return nil, err
-	}
-	id["apiVersion"] = apiVersion.Value
-
-	kind, err := grab(node, "kind")
-	if err != nil {
-		return nil, err
-	}
-	id["kind"] = kind.Value
-
-	// namespace is optional and will be omitted if not set
-	namespace, err := grab(node, "metadata.namespace")
-	if err == nil {
-		id["namespace"] = namespace.Value
-	}
-
-	name, err := grab(node, "metadata.name")
-	if err != nil {
-		return nil, err
-	}
-	id["name"] = name.Value
-
-	return id, nil
-}
-
 func (i *k8sItemIdentifier) Name(node *yamlv3.Node) (string, error) {
 	if node.Kind != yamlv3.MappingNode {
 		return "", fmt.Errorf("provided node is not a mapping node")
@@ -162,10 +134,61 @@ func (i *k8sItemIdentifier) Name(node *yamlv3.Node) (string, error) {
 		return "", err
 	}
 	elem = append(elem, name.Value)
-	
+
 	return strings.Join(elem, "/"), nil
 }
 
 func (i *k8sItemIdentifier) String() string {
 	return "resource"
+}
+
+func K8sMetaFromName(name string) (*K8sMetadata, error) {
+	parts := strings.Split(name, "/")
+
+	switch len(parts) {
+	case 3:
+		// Minimum case. Must be APIVersion/Kind/Name
+		// where APIVersion has no group
+		return &K8sMetadata{
+			APIVersion: parts[0],
+			Kind:       parts[1],
+			Metadata: metav1.ObjectMeta{
+				Name: parts[2],
+			},
+		}, nil
+	case 4:
+		// Could be APIVersion/Kind/Namespace/Name or APIVersion/Kind/Name
+		// if APIVersion has a group i.e. apps
+		if regexp.MustCompile(`^v\d+([a-z]+\d+)?$`).MatchString(parts[0]) {
+			return &K8sMetadata{
+				APIVersion: parts[0],
+				Kind:       parts[1],
+				Metadata: metav1.ObjectMeta{
+					Namespace: parts[2],
+					Name:      parts[3],
+				},
+			}, nil
+		}
+		return &K8sMetadata{
+			APIVersion: parts[0] + "/" + parts[1],
+			Kind:       parts[2],
+			Metadata: metav1.ObjectMeta{
+				Name: parts[3],
+			},
+		}, nil
+
+	case 5:
+		// Maximum case. Must be APIVersion/Group/Kind/Namespace/Name
+		// where APIVersion has a group i.e. apps
+		return &K8sMetadata{
+			APIVersion: parts[0] + "/" + parts[1],
+			Kind:       parts[2],
+			Metadata: metav1.ObjectMeta{
+				Namespace: parts[3],
+				Name:      parts[4],
+			},
+		}, nil
+	}
+
+	return nil, fmt.Errorf("invalid resource name %q", name)
 }

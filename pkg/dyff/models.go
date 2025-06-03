@@ -46,9 +46,10 @@ type Detail struct {
 	Kind rune
 }
 
-type K8sIdentifier struct {
-	Metadata metav1.ObjectMeta
-	metav1.TypeMeta
+type K8sMetadata struct {
+	APIVersion string
+	Kind       string
+	Metadata   metav1.ObjectMeta
 }
 
 // Diff encapsulates everything noteworthy about a difference
