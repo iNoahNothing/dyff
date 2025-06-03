@@ -330,7 +330,7 @@ func writeReport(cmd *cobra.Command, report dyff.Report) error {
 		}
 
 	default:
-		return fmt.Errorf("unknown output style %s: %w", reportOptions.Style, fmt.Errorf(cmd.UsageString()))
+		return fmt.Errorf("unknown output style %s: %w", reportOptions.Style, fmt.Errorf("%s", cmd.UsageString()))
 	}
 
 	if err := reportWriter.WriteReport(os.Stdout); err != nil {

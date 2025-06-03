@@ -266,8 +266,8 @@ func (report *HumanReport) generateHumanDetailOutputModification(detail Detail) 
 		if fromType != toType {
 			_, _ = output.WriteString(yellow("%c type change from %s to %s\n",
 				MODIFICATION,
-				italic(fromType),
-				italic(toType),
+				italic("%s", fromType),
+				italic("%s", toType),
 			))
 
 		} else {
@@ -373,11 +373,11 @@ func (report *HumanReport) writeStringDiff(output stringWriter, from string, to 
 			// color and format each diff by type
 			switch d.Type {
 			case diffmatchpatch.DiffInsert:
-				fmt.Fprint(&buf, green(createStringWithContinuousPrefix("+ ", d.Text, report.Indent)))
+				fmt.Fprint(&buf, green("%s", createStringWithContinuousPrefix("+ ", d.Text, report.Indent)))
 				ins++
 
 			case diffmatchpatch.DiffDelete:
-				fmt.Fprint(&buf, red(createStringWithContinuousPrefix("- ", d.Text, report.Indent)))
+				fmt.Fprint(&buf, red("%s", createStringWithContinuousPrefix("- ", d.Text, report.Indent)))
 				del++
 
 			case diffmatchpatch.DiffEqual:
@@ -402,7 +402,7 @@ func (report *HumanReport) writeStringDiff(output stringWriter, from string, to 
 						text.Plural((upper-lower), "line"),
 						strings.Join(lines[upper:], "\n"))
 				}
-				fmt.Fprint(&buf, dimgray(createStringWithContinuousPrefix("  ", val, report.Indent)))
+				fmt.Fprint(&buf, dimgray("%s", createStringWithContinuousPrefix("  ", val, report.Indent)))
 			}
 		}
 		_, _ = output.WriteString(
@@ -433,12 +433,12 @@ func (report *HumanReport) highlightByLine(from, to string) string {
 	if len(fromLines) == len(toLines) {
 		for i := range fromLines {
 			if fromLines[i] != toLines[i] {
-				fromLines[i] = red(fromLines[i])
-				toLines[i] = green(toLines[i])
+				fromLines[i] = red("%s", fromLines[i])
+				toLines[i] = green("%s", toLines[i])
 
 			} else {
-				fromLines[i] = lightred(fromLines[i])
-				toLines[i] = lightgreen(toLines[i])
+				fromLines[i] = lightred("%s", fromLines[i])
+				toLines[i] = lightgreen("%s", toLines[i])
 			}
 		}
 
