@@ -22,6 +22,7 @@ package dyff
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strings"
 
 	yamlv3 "gopkg.in/yaml.v3"
@@ -32,6 +33,8 @@ type listItemIdentifier interface {
 	// Name returns an unique name from the given entry, or an error in case this
 	// is not possible due to missing fields
 	Name(mappingNode *yamlv3.Node) (string, error)
+
+	Identifier(mappingNode *yamlv3.Node) (*K8sIdentifier, error)
 
 	// FindNodeByName returns the node that matches the given name, or an error in
 	// case it cannot find such an entry or required fields are missing
@@ -75,6 +78,11 @@ func (sf *singleField) Name(mappingNode *yamlv3.Node) (string, error) {
 	return followAlias(result).Value, nil
 }
 
+// Stub function. Should not be called
+func (sf *singleField) Identifier(mappingNode *yamlv3.Node) (*K8sIdentifier, error) {
+	return nil, nil
+}
+
 func (sf *singleField) String() string {
 	return sf.IdentifierFieldName
 }
@@ -102,40 +110,86 @@ func (i *k8sItemIdentifier) FindNodeByName(sequenceNode *yamlv3.Node, name strin
 	return nil, fmt.Errorf("failed to find mapping entry with name %q", name)
 }
 
+func getK8sItemIdentifier(node *yamlv3.Node) (map[string]string, error) {
+	var id map[string]string
+
+	apiVersion, err := grab(node, "apiVersion")
+	if err != nil {
+		return nil, err
+	}
+	id["apiVersion"] = apiVersion.Value
+
+	kind, err := grab(node, "kind")
+	if err != nil {
+		return nil, err
+	}
+	id["kind"] = kind.Value
+
+	// namespace is optional and will be omitted if not set
+	namespace, err := grab(node, "metadata.namespace")
+	if err == nil {
+		id["namespace"] = namespace.Value
+	}
+
+	name, err := grab(node, "metadata.name")
+	if err != nil {
+		return nil, err
+	}
+	id["name"] = name.Value
+
+	return id, nil
+}
+
 func (i *k8sItemIdentifier) Name(node *yamlv3.Node) (string, error) {
 	if node.Kind != yamlv3.MappingNode {
 		return "", fmt.Errorf("provided node is not a mapping node")
 	}
 
 	var elem []string
-
-	apiVersion, err := grab(node, "apiVersion")
+	id, err := getK8sItemIdentifier(node)
 	if err != nil {
 		return "", err
 	}
-	elem = append(elem, apiVersion.Value)
 
-	kind, err := grab(node, "kind")
-	if err != nil {
-		return "", err
+	if namespace, ok := id["namespace"]; ok {
+		elem = append(elem, id["apiVersion"], id["kind"], namespace, id["name"])
+	} else {
+		elem = append(elem, id["apiVersion"], id["kind"], id["name"])
 	}
-	elem = append(elem, kind.Value)
-
-	// namespace is optional and will be omitted if not set
-	namespace, err := grab(node, "metadata.namespace")
-	if err == nil {
-		elem = append(elem, namespace.Value)
-	}
-
-	name, err := grab(node, "metadata.name")
-	if err != nil {
-		return "", err
-	}
-	elem = append(elem, name.Value)
 
 	return strings.Join(elem, "/"), nil
 }
 
-func (lf *k8sItemIdentifier) String() string {
+func (i *k8sItemIdentifier) Identifier(node *yamlv3.Node) (*K8sIdentifier, error) {
+
+	id, err := getK8sItemIdentifier(node)
+	if err != nil {
+		return nil, err
+	}
+	if namespace, ok := id["namespace"]; ok {
+		return &K8sIdentifier{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: id["apiVersion"],
+				Kind:       id["kind"],
+			},
+			Metadata: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      id["name"],
+			},
+		}, nil
+	}
+
+	return &K8sIdentifier{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: id["apiVersion"],
+			Kind:       id["kind"],
+		},
+		Metadata: metav1.ObjectMeta{
+			Name: id["name"],
+		},
+	}, nil
+}
+
+func (i *k8sItemIdentifier) String() string {
 	return "resource"
 }

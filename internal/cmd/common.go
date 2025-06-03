@@ -116,7 +116,7 @@ func applyReportOptionsFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&reportOptions.ChompBlockScalars, "chomp-block-scalars", defaults.ChompBlockScalars, "chomp block scalars for comparison, otherwise compare unformatted strings")
 
 	// Main output preferences
-	cmd.Flags().StringVarP(&reportOptions.Style, "output", "o", defaults.Style, "specify the output style, supported styles: human, brief, github, gitlab, gitea")
+	cmd.Flags().StringVarP(&reportOptions.Style, "output", "o", defaults.Style, "specify the output style, supported styles: human, brief, github, gitlab, gitea, yaml")
 	cmd.Flags().BoolVarP(&reportOptions.OmitHeader, "omit-header", "b", defaults.OmitHeader, "omit the dyff summary header")
 	cmd.Flags().BoolVarP(&reportOptions.ExitWithCode, "set-exit-code", "s", defaults.ExitWithCode, "set program exit code, with 0 meaning no difference, 1 for differences detected, and 255 for program error")
 
@@ -317,6 +317,11 @@ func writeReport(cmd *cobra.Command, report dyff.Report) error {
 				MultilineContextLines: reportOptions.MultilineContextLines,
 				PrefixMultiline:       true,
 			},
+		}
+
+	case "yaml", "yml":
+		reportWriter = &dyff.YAMLReport{
+			Report: report,
 		}
 
 	case "brief", "short", "summary":

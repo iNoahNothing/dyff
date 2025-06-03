@@ -25,6 +25,7 @@ import (
 
 	"github.com/gonvenience/ytbx"
 	yamlv3 "gopkg.in/yaml.v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Constants to distinguish between the different kinds of differences
@@ -45,10 +46,16 @@ type Detail struct {
 	Kind rune
 }
 
+type K8sIdentifier struct {
+	Metadata metav1.ObjectMeta
+	metav1.TypeMeta
+}
+
 // Diff encapsulates everything noteworthy about a difference
 type Diff struct {
-	Path    *ytbx.Path
-	Details []Detail
+	Path          *ytbx.Path
+	Details       []Detail
+	K8sIdentifier *K8sIdentifier
 }
 
 // Report encapsulates the actual end-result of the comparison: The input data
