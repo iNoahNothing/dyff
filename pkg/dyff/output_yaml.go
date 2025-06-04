@@ -2,7 +2,9 @@ package dyff
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/gonvenience/neat"
+	"github.com/gonvenience/ytbx"
 	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -12,7 +14,7 @@ type YAMLReport struct {
 }
 
 type YAMLReportDiff struct {
-	Details []Detail
+	Details map[string]string
 	Path    string
 }
 type YAMLReportOutput struct {
@@ -26,8 +28,11 @@ type YAMLReportOutput struct {
 func (report *YAMLReport) WriteReport(out io.Writer) error {
 	writer := bufio.NewWriter(out)
 	defer writer.Flush()
-
-	for file, diffs := range report.consolidateDiff() {
+	consolidatedDiff, err := report.consolidateDiff()
+	if err != nil {
+		return err
+	}
+	for file, diffs := range consolidatedDiff {
 		meta, err := K8sMetaFromName(file)
 		if err != nil {
 			return err
@@ -35,11 +40,11 @@ func (report *YAMLReport) WriteReport(out io.Writer) error {
 		var d []YAMLReportDiff
 		for _, diff := range diffs {
 			d = append(d, YAMLReportDiff{
-				Path:    diff.Path.String(),
+				Path:    diff.Path,
 				Details: diff.Details,
 			})
 		}
-		data := &YAMLReportOutput{
+		data := YAMLReportOutput{
 			APIVersion: meta.APIVersion,
 			Kind:       meta.Kind,
 			Metadata:   meta.Metadata,
@@ -47,9 +52,9 @@ func (report *YAMLReport) WriteReport(out io.Writer) error {
 		}
 
 		// Use neat to format the YAML output
-		neatProcessor := neat.NewOutputProcessor(false, true, nil)
-		yamlData, err := neatProcessor.ToYAML(data)
+		yamlData, err := neat.NewOutputProcessor(false, true, nil).ToYAML(data)
 		if err != nil {
+			fmt.Println("Failed to marshal data:", data.Diffs[0])
 			return err
 		}
 
@@ -62,31 +67,82 @@ func (report *YAMLReport) WriteReport(out io.Writer) error {
 	return nil
 }
 
-func (report *YAMLReport) consolidateDiff() map[string][]Diff {
-	fileDiffs := make(map[string][]Diff)
+func (report *YAMLReport) consolidateDiff() (map[string][]YAMLReportDiff, error) {
+	fileDiffs := make(map[string][]YAMLReportDiff)
 
 	for _, diff := range report.Diffs {
-		var deet Detail
+		deet := make(map[string]string)
 		switch len(diff.Details) {
 		case 1:
-			deet = diff.Details[0]
+			switch diff.Details[0].Kind {
+			case ADDITION:
+				ytbx.RestructureObject(diff.Details[0].To)
+				output, err := neat.NewOutputProcessor(false, true, nil).ToYAML(diff.Details[0].To)
+				if err != nil {
+					return nil, err
+				}
+				deet["to"] = output
+				deet["from"] = ""
+				deet["kind"] = "addition"
+			case REMOVAL:
+				ytbx.RestructureObject(diff.Details[0].From)
+				output, err := neat.NewOutputProcessor(false, true, nil).ToYAML(diff.Details[0].From)
+				if err != nil {
+					return nil, err
+				}
+				deet["to"] = ""
+				deet["from"] = output
+				deet["kind"] = "removal"
+			case MODIFICATION:
+				ytbx.RestructureObject(diff.Details[0].To)
+				outputTo, err := neat.NewOutputProcessor(false, true, nil).ToYAML(diff.Details[0].To)
+				ytbx.RestructureObject(diff.Details[0].From)
+				outputFrom, err := neat.NewOutputProcessor(false, true, nil).ToYAML(diff.Details[0].From)
+				if err != nil {
+					return nil, err
+				}
+				deet["to"] = outputTo
+				deet["from"] = outputFrom
+				deet["kind"] = "modification"
+			case ORDERCHANGE:
+				ytbx.RestructureObject(diff.Details[0].To)
+				outputTo, err := neat.NewOutputProcessor(false, true, nil).ToYAML(diff.Details[0].To)
+				ytbx.RestructureObject(diff.Details[0].From)
+				outputFrom, err := neat.NewOutputProcessor(false, true, nil).ToYAML(diff.Details[0].From)
+				if err != nil {
+					return nil, err
+				}
+				deet["to"] = outputTo
+				deet["from"] = outputFrom
+				deet["kind"] = "orderchange"
+			}
 		case 2:
 			for _, detail := range diff.Details {
 				switch detail.Kind {
 				case ADDITION:
-					deet.To = detail.To
+					ytbx.RestructureObject(detail.To)
+					output, err := neat.NewOutputProcessor(false, true, nil).ToYAML(detail.To)
+					if err != nil {
+						return nil, err
+					}
+					deet["to"] = output
 				case REMOVAL:
-					deet.From = detail.From
+					ytbx.RestructureObject(detail.From)
+					output, err := neat.NewOutputProcessor(false, true, nil).ToYAML(detail.From)
+					if err != nil {
+						return nil, err
+					}
+					deet["from"] = output
 				}
 			}
-			deet.Kind = MODIFICATION
+			deet["kind"] = "modification"
 		}
 
-		fileDiffs[diff.Path.RootDescription()] = append(fileDiffs[diff.Path.RootDescription()], Diff{
-			Path:    diff.Path,
-			Details: []Detail{deet},
+		fileDiffs[diff.Path.RootDescription()] = append(fileDiffs[diff.Path.RootDescription()], YAMLReportDiff{
+			Path:    diff.Path.String(),
+			Details: deet,
 		})
 	}
 
-	return fileDiffs
+	return fileDiffs, nil
 }
