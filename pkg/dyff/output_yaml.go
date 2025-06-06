@@ -2,7 +2,6 @@ package dyff
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/gonvenience/neat"
 	"github.com/gonvenience/ytbx"
 	"io"
@@ -17,6 +16,7 @@ type YAMLReportDiff struct {
 	Details map[string]string
 	Path    string
 }
+
 type YAMLReportOutput struct {
 	APIVersion string
 	Kind       string
@@ -54,7 +54,6 @@ func (report *YAMLReport) WriteReport(out io.Writer) error {
 		// Use neat to format the YAML output
 		yamlData, err := neat.NewOutputProcessor(false, true, nil).ToYAML(data)
 		if err != nil {
-			fmt.Println("Failed to marshal data:", data.Diffs[0])
 			return err
 		}
 
