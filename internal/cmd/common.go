@@ -135,7 +135,17 @@ func applyReportOptionsFlags(cmd *cobra.Command) {
 	var configFile string
 	cmd.Flags().StringVar(&configFile, "config", ".dyffconfig.yml", "set dyff options from a yaml config file.")
 
-	if err := cmd.ParseFlags(os.Args); err != nil {
+	// Sanitize testing flags from input
+	var args []string
+	for _, arg := range os.Args {
+		if strings.HasPrefix(arg, "--ginkgo.") || strings.HasPrefix(arg, "--test.") {
+			continue
+		}
+		args = append(args, arg)
+	}
+
+	// Need to explicitly call parse flags so config is read before execution
+	if err := cmd.ParseFlags(args); err != nil {
 		bunt.Errorf("failed to parse flags: %v", err)
 		os.Exit(1)
 	}
