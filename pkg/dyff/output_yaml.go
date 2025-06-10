@@ -18,10 +18,10 @@ type YAMLReportDiff struct {
 }
 
 type YAMLReportOutput struct {
-	APIVersion string
-	Kind       string
-	Metadata   metav1.ObjectMeta
-	Diffs      []YAMLReportDiff
+	APIVersion string            `yaml:"apiVersion"`
+	Kind       string            `yaml:"kind"`
+	Metadata   metav1.ObjectMeta `yaml:"metadata"`
+	Diffs      []YAMLReportDiff  `yaml:"diffs"`
 }
 
 // TODO: Support non-Kubernetes yaml documents
