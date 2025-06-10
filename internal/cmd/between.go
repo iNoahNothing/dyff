@@ -22,9 +22,10 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/gonvenience/ytbx"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"os"
 
 	"github.com/homeport/dyff/pkg/dyff"
 )
@@ -39,6 +40,8 @@ type betweenCmdOptions struct {
 
 var betweenCmdSettings betweenCmdOptions
 
+var configFile string
+
 // betweenCmd represents the between command
 var betweenCmd = &cobra.Command{
 	Use:   "between [flags] <from> <to>",
@@ -49,7 +52,21 @@ types are: YAML (http://yaml.org/) and JSON (http://json.org/).
 `,
 	Args:    cobra.ExactArgs(2),
 	Aliases: []string{"bw"},
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if _, err := os.Stat(configFile); err == nil {
+			viper.SetConfigFile(configFile)
+			if err := viper.ReadInConfig(); err != nil {
+				fmt.Printf("Error reading config file: %v\n", err)
+				os.Exit(1)
+			}
+		}
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Decode config file
+		if err := viper.Unmarshal(&reportOptions); err != nil {
+			return fmt.Errorf("failed to decode config file: %w", err)
+		}
+
 		var fromLocation, toLocation string
 		if betweenCmdSettings.swap {
 			fromLocation = args[1]
@@ -155,4 +172,5 @@ func init() {
 	betweenCmd.Flags().StringVar(&betweenCmdSettings.chrootFrom, "chroot-of-from", "", "only change the root level of the from input file")
 	betweenCmd.Flags().StringVar(&betweenCmdSettings.chrootTo, "chroot-of-to", "", "only change the root level of the to input file")
 	betweenCmd.Flags().BoolVar(&betweenCmdSettings.translateListToDocuments, "chroot-list-to-documents", false, "in case the change root points to a list, treat this list as a set of documents and not as the list itself")
+	betweenCmd.PersistentFlags().StringVar(&configFile, "config", ".dyffconfig.yml", "set dyff options from a yaml config file.")
 }

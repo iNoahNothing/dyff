@@ -24,6 +24,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/spf13/viper"
 	"io"
 	"os"
 	"strings"
@@ -38,31 +39,31 @@ import (
 )
 
 type reportConfig struct {
-	Style                     string   `yaml:"style"`
-	IgnoreOrderChanges        bool     `yaml:"ignore-order-changes"`
-	IgnoreWhitespaceChanges   bool     `yaml:"ignore-whitespace-changes"`
-	KubernetesEntityDetection bool     `yaml:"kubernetes-entity-detection"`
-	NoTableStyle              bool     `yaml:"no-table-style"`
-	DoNotInspectCerts         bool     `yaml:"do-not-inspect-certs"`
-	ExitWithCode              bool     `yaml:"exit-with-code"`
-	OmitHeader                bool     `yaml:"omit-header"`
-	UseGoPatchPaths           bool     `yaml:"use-go-patch-paths"`
-	IgnoreValueChanges        bool     `yaml:"ignore-value-changes"`
-	IgnoreNewDocuments        bool     `yaml:"ignore-new-documents"`
-	DetectRenames             bool     `yaml:"detect-renames"`
-	MarshalJsonStrings        bool     `yaml:"marshal-json-strings"`
-	ChompBlockScalars         bool     `yaml:"chomp-block-scalars"`
-	MinorChangeThreshold      float64  `yaml:"minor-change-threshold"`
-	MultilineContextLines     int      `yaml:"multiline-context-lines"`
-	AdditionalIdentifiers     []string `yaml:"additional-identifier"`
-	Filters                   []string `yaml:"filter"`
-	Excludes                  []string `yaml:"exclude"`
-	FilterRegexps             []string `yaml:"filter-regexp"`
-	ExcludeRegexps            []string `yaml:"exclude-regexp"`
-	FilterDocuments           []string `yaml:"filter-document"`
-	ExcludeDocuments          []string `yaml:"exclude-document"`
-	FilterDocumentRegexps     []string `yaml:"filter-document-regexp"`
-	ExcludeDocumentRegexps    []string `yaml:"exclude-document-regexp"`
+	Style                     string   `mapstructure:"style"`
+	IgnoreOrderChanges        bool     `mapstructure:"ignore-order-changes"`
+	IgnoreWhitespaceChanges   bool     `mapstructure:"ignore-whitespace-changes"`
+	KubernetesEntityDetection bool     `mapstructure:"kubernetes-entity-detection"`
+	NoTableStyle              bool     `mapstructure:"no-table-style"`
+	DoNotInspectCerts         bool     `mapstructure:"do-not-inspect-certs"`
+	ExitWithCode              bool     `mapstructure:"exit-with-code"`
+	OmitHeader                bool     `mapstructure:"omit-header"`
+	UseGoPatchPaths           bool     `mapstructure:"use-go-patch-paths"`
+	IgnoreValueChanges        bool     `mapstructure:"ignore-value-changes"`
+	IgnoreNewDocuments        bool     `mapstructure:"ignore-new-documents"`
+	DetectRenames             bool     `mapstructure:"detect-renames"`
+	MarshalJsonStrings        bool     `mapstructure:"marshal-json-strings"`
+	ChompBlockScalars         bool     `mapstructure:"chomp-block-scalars"`
+	MinorChangeThreshold      float64  `mapstructure:"minor-change-threshold"`
+	MultilineContextLines     int      `mapstructure:"multiline-context-lines"`
+	AdditionalIdentifiers     []string `mapstructure:"additional-identifier"`
+	Filters                   []string `mapstructure:"filter"`
+	Excludes                  []string `mapstructure:"exclude"`
+	FilterRegexps             []string `mapstructure:"filter-regexp"`
+	ExcludeRegexps            []string `mapstructure:"exclude-regexp"`
+	FilterDocuments           []string `mapstructure:"filter-document"`
+	ExcludeDocuments          []string `mapstructure:"exclude-document"`
+	FilterDocumentRegexps     []string `mapstructure:"filter-document-regexp"`
+	ExcludeDocumentRegexps    []string `mapstructure:"exclude-document-regexp"`
 }
 
 var defaults = reportConfig{
@@ -98,72 +99,63 @@ var reportOptions reportConfig
 func applyReportOptionsFlags(cmd *cobra.Command) {
 	// Compare options
 	cmd.Flags().BoolVarP(&reportOptions.IgnoreOrderChanges, "ignore-order-changes", "i", defaults.IgnoreOrderChanges, "ignore order changes in lists")
+	viper.BindPFlag("ignore-order-changes", cmd.Flags().Lookup("ignore-order-changes"))
 	cmd.Flags().BoolVar(&reportOptions.IgnoreWhitespaceChanges, "ignore-whitespace-changes", defaults.IgnoreWhitespaceChanges, "ignore leading or trailing whitespace changes")
+	viper.BindPFlag("ignore-whitespace-changes", cmd.Flags().Lookup("ignore-whitespace-changes"))
 	cmd.Flags().BoolVarP(&reportOptions.KubernetesEntityDetection, "detect-kubernetes", "", defaults.KubernetesEntityDetection, "detect kubernetes entities")
+	viper.BindPFlag("detect-kubernetes", cmd.Flags().Lookup("detect-kubernetes"))
 	cmd.Flags().StringArrayVar(&reportOptions.AdditionalIdentifiers, "additional-identifier", defaults.AdditionalIdentifiers, "use additional identifier candidates in named entry lists")
+	viper.BindPFlag("additional-identifier", cmd.Flags().Lookup("additional-identifier"))
 	cmd.Flags().StringSliceVar(&reportOptions.Filters, "filter", defaults.Filters, "filter reports to a subset of differences based on supplied arguments")
+	viper.BindPFlag("filter", cmd.Flags().Lookup("filter"))
 	cmd.Flags().StringSliceVar(&reportOptions.Excludes, "exclude", defaults.Excludes, "exclude reports from a set of differences based on supplied arguments")
+	viper.BindPFlag("exclude", cmd.Flags().Lookup("exclude"))
 	cmd.Flags().StringSliceVar(&reportOptions.FilterRegexps, "filter-regexp", defaults.FilterRegexps, "filter reports to a subset of differences based on supplied regular expressions")
+	viper.BindPFlag("filter-regexp", cmd.Flags().Lookup("filter-regexp"))
 	cmd.Flags().StringSliceVar(&reportOptions.ExcludeRegexps, "exclude-regexp", defaults.ExcludeRegexps, "exclude reports from a set of differences based on supplied regular expressions")
+	viper.BindPFlag("exclude-regexp", cmd.Flags().Lookup("exclude-regexp"))
 	cmd.Flags().StringSliceVar(&reportOptions.FilterDocuments, "filter-document", defaults.FilterDocuments, "filter report to a subset of documents")
+	viper.BindPFlag("filter-document", cmd.Flags().Lookup("filter-document"))
 	cmd.Flags().StringSliceVar(&reportOptions.ExcludeDocuments, "exclude-document", defaults.ExcludeDocuments, "exclude documents from report")
+	viper.BindPFlag("exclude-document", cmd.Flags().Lookup("exclude-document"))
 	cmd.Flags().StringSliceVar(&reportOptions.FilterDocumentRegexps, "filter-document-regexp", defaults.FilterDocumentRegexps, "filter report to a subset of documents based on supplied regular expressions")
+	viper.BindPFlag("filter-document-regexp", cmd.Flags().Lookup("filter-document-regexp"))
 	cmd.Flags().StringSliceVar(&reportOptions.ExcludeDocumentRegexps, "exclude-document-regexp", defaults.ExcludeDocumentRegexps, "exclude documents from report based on supplied regular expressions")
+	viper.BindPFlag("exclude-document-regexp", cmd.Flags().Lookup("exclude-document-regexp"))
 	cmd.Flags().BoolVarP(&reportOptions.IgnoreValueChanges, "ignore-value-changes", "v", defaults.IgnoreValueChanges, "exclude changes in values")
+	viper.BindPFlag("ignore-value-changes", cmd.Flags().Lookup("ignore-value-changes"))
 	cmd.Flags().BoolVar(&reportOptions.IgnoreNewDocuments, "ignore-new-documents", defaults.IgnoreNewDocuments, "exclude new documents")
+	viper.BindPFlag("ignore-new-documents", betweenCmd.Flags().Lookup("ignore-new-documents"))
 	cmd.Flags().BoolVar(&reportOptions.DetectRenames, "detect-renames", defaults.DetectRenames, "enable detection for renames (document level for Kubernetes resources)")
+	viper.BindPFlag("detect-renames", cmd.Flags().Lookup("detect-renames"))
 	cmd.Flags().BoolVar(&reportOptions.MarshalJsonStrings, "marshal-json-strings", defaults.MarshalJsonStrings, "marshal Json strings for comparison, otherwise compare unformatted strings")
+	viper.BindPFlag("marshal-json-strings", cmd.Flags().Lookup("marshal-json-strings"))
 	cmd.Flags().BoolVar(&reportOptions.ChompBlockScalars, "chomp-block-scalars", defaults.ChompBlockScalars, "chomp block scalars for comparison, otherwise compare unformatted strings")
+	viper.BindPFlag("chomp-block-scalars", cmd.Flags().Lookup("chomp-block-scalars"))
 
 	// Main output preferences
 	cmd.Flags().StringVarP(&reportOptions.Style, "output", "o", defaults.Style, "specify the output style, supported styles: human, brief, github, gitlab, gitea, yaml")
+	viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 	cmd.Flags().BoolVarP(&reportOptions.OmitHeader, "omit-header", "b", defaults.OmitHeader, "omit the dyff summary header")
+	viper.BindPFlag("omit-header", cmd.Flags().Lookup("omit-header"))
 	cmd.Flags().BoolVarP(&reportOptions.ExitWithCode, "set-exit-code", "s", defaults.ExitWithCode, "set program exit code, with 0 meaning no difference, 1 for differences detected, and 255 for program error")
+	viper.BindPFlag("set-exit-code", cmd.Flags().Lookup("set-exit-code"))
 
 	// Human/BOSH output related flags
 	cmd.Flags().BoolVarP(&reportOptions.NoTableStyle, "no-table-style", "l", defaults.NoTableStyle, "do not place blocks next to each other, always use one row per text block")
+	viper.BindPFlag("no-table-style", cmd.Flags().Lookup("no-table-style"))
 	cmd.Flags().BoolVarP(&reportOptions.DoNotInspectCerts, "no-cert-inspection", "x", defaults.DoNotInspectCerts, "disable x509 certificate inspection, compare as raw text")
+	viper.BindPFlag("no-cert-inspection", cmd.Flags().Lookup("no-cert-inspection"))
 	cmd.Flags().BoolVarP(&reportOptions.UseGoPatchPaths, "use-go-patch-style", "g", defaults.UseGoPatchPaths, "use Go-Patch style paths in outputs")
+	viper.BindPFlag("use-go-patch-style", cmd.Flags().Lookup("use-go-patch-style"))
 	cmd.Flags().Float64VarP(&reportOptions.MinorChangeThreshold, "minor-change-threshold", "", defaults.MinorChangeThreshold, "minor change threshold")
+	viper.BindPFlag("minor-change-threshold", cmd.Flags().Lookup("minor-change-threshold"))
 	cmd.Flags().IntVarP(&reportOptions.MultilineContextLines, "multi-line-context-lines", "", defaults.MultilineContextLines, "multi-line context lines")
+	viper.BindPFlag("multiline-context-lines", cmd.Flags().Lookup("multi-line-context-lines"))
 
 	// Deprecated
 	cmd.Flags().BoolVar(&reportOptions.ExitWithCode, "set-exit-status", defaults.ExitWithCode, "set program exit code, with 0 meaning no difference, 1 for differences detected, and 255 for program error")
 	_ = cmd.Flags().MarkDeprecated("set-exit-status", "use --set-exit-code instead")
-
-	// Set reportOptions from a config file
-	var configFile string
-	cmd.Flags().StringVar(&configFile, "config", ".dyffconfig.yml", "set dyff options from a yaml config file.")
-
-	// Sanitize testing flags from input
-	var args []string
-	for _, arg := range os.Args {
-		if strings.HasPrefix(arg, "--ginkgo.") || strings.HasPrefix(arg, "--test.") {
-			continue
-		}
-		args = append(args, arg)
-	}
-
-	// Need to explicitly call parse flags so config is read before execution
-	if err := cmd.ParseFlags(args); err != nil {
-		bunt.Errorf("failed to parse flags: %v", err)
-		os.Exit(1)
-	}
-
-	if _, err := os.Stat(configFile); err == nil {
-		file, err := os.Open(configFile)
-		if err != nil {
-			bunt.Errorf("failed to open config file %s: %v", configFile, err)
-			os.Exit(1)
-		}
-		defer file.Close()
-
-		decoder := yamlv3.NewDecoder(file)
-		if err := decoder.Decode(&reportOptions); err != nil {
-			bunt.Errorf("failed to decode config file %s: %v", configFile, err)
-			os.Exit(1)
-		}
-	}
 }
 
 // OutputWriter encapsulates the required fields to define the look and feel of
