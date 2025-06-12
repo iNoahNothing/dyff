@@ -5,7 +5,6 @@ import (
 	"github.com/gonvenience/neat"
 	"github.com/gonvenience/ytbx"
 	"io"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type YAMLReport struct {
@@ -20,7 +19,7 @@ type YAMLReportDiff struct {
 type YAMLReportOutput struct {
 	APIVersion string            `yaml:"apiVersion"`
 	Kind       string            `yaml:"kind"`
-	Metadata   metav1.ObjectMeta `yaml:"metadata"`
+	Metadata   map[string]string `yaml:"metadata"`
 	Diffs      []YAMLReportDiff  `yaml:"diffs"`
 }
 

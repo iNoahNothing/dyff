@@ -22,7 +22,6 @@ package dyff
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
 	"strings"
 
@@ -152,8 +151,8 @@ func K8sMetaFromName(name string) (*K8sMetadata, error) {
 		return &K8sMetadata{
 			APIVersion: parts[0],
 			Kind:       parts[1],
-			Metadata: metav1.ObjectMeta{
-				Name: parts[2],
+			Metadata: map[string]string{
+				"name": parts[2],
 			},
 		}, nil
 	case 4:
@@ -163,17 +162,17 @@ func K8sMetaFromName(name string) (*K8sMetadata, error) {
 			return &K8sMetadata{
 				APIVersion: parts[0],
 				Kind:       parts[1],
-				Metadata: metav1.ObjectMeta{
-					Namespace: parts[2],
-					Name:      parts[3],
+				Metadata: map[string]string{
+					"namespace": parts[2],
+					"name":      parts[3],
 				},
 			}, nil
 		}
 		return &K8sMetadata{
 			APIVersion: parts[0] + "/" + parts[1],
 			Kind:       parts[2],
-			Metadata: metav1.ObjectMeta{
-				Name: parts[3],
+			Metadata: map[string]string{
+				"name": parts[3],
 			},
 		}, nil
 
@@ -183,9 +182,9 @@ func K8sMetaFromName(name string) (*K8sMetadata, error) {
 		return &K8sMetadata{
 			APIVersion: parts[0] + "/" + parts[1],
 			Kind:       parts[2],
-			Metadata: metav1.ObjectMeta{
-				Namespace: parts[3],
-				Name:      parts[4],
+			Metadata: map[string]string{
+				"namespace": parts[3],
+				"name":      parts[4],
 			},
 		}, nil
 	}

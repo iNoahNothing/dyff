@@ -25,7 +25,6 @@ import (
 
 	"github.com/gonvenience/ytbx"
 	yamlv3 "gopkg.in/yaml.v3"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Constants to distinguish between the different kinds of differences
@@ -49,7 +48,7 @@ type Detail struct {
 type K8sMetadata struct {
 	APIVersion string
 	Kind       string
-	Metadata   metav1.ObjectMeta
+	Metadata   map[string]string
 }
 
 // Diff encapsulates everything noteworthy about a difference
